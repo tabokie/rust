@@ -43,14 +43,13 @@ impl<'a, T> Iterator for Iter<'a, T> {
             return None;
         }
         let tail = self.tail;
-        self.tail = wrap_index(self.tail.wrapping_add(1), self.ring.len());
-        unsafe { Some(self.ring.get_unchecked(tail)) }
+        self.tail += 1;
+        unsafe { Some(self.ring.get_unchecked(wrap_index(tail, self.ring.len()))) }
     }
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = count(self.tail, self.head, self.ring.len());
-        (len, Some(len))
+        (self.head - self.tail, Some(self.head - self.tail))
     }
 
     fn fold<Acc, F>(self, mut accum: Acc, mut f: F) -> Acc
