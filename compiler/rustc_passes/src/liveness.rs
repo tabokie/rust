@@ -513,6 +513,8 @@ struct Liveness<'a, 'tcx> {
     // it probably doesn't now)
     break_ln: HirIdMap<LiveNode>,
     cont_ln: HirIdMap<LiveNode>,
+
+    conditional_succ: Option<LiveNode>,
 }
 
 impl<'a, 'tcx> Liveness<'a, 'tcx> {
@@ -537,6 +539,7 @@ impl<'a, 'tcx> Liveness<'a, 'tcx> {
             exit_ln,
             break_ln: Default::default(),
             cont_ln: Default::default(),
+            conditional_succ: None,
         }
     }
 
@@ -886,6 +889,7 @@ impl<'a, 'tcx> Liveness<'a, 'tcx> {
                 //    v     v
                 //   (  succ  )
                 //
+                self.conditional_succ = Some(succ);
                 let else_ln =
                     self.propagate_through_opt_expr(else_opt.as_ref().map(|e| &**e), succ);
                 let then_ln = self.propagate_through_expr(&then, succ);
@@ -910,6 +914,7 @@ impl<'a, 'tcx> Liveness<'a, 'tcx> {
                 //   (  succ  )
                 //
                 //
+                self.conditional_succ = Some(succ);
                 let ln = self.live_node(expr.hir_id, expr.span);
                 self.init_empty(ln, succ);
                 for arm in arms {
@@ -1265,7 +1270,9 @@ impl<'a, 'tcx> Liveness<'a, 'tcx> {
     fn check_is_ty_uninhabited(&mut self, expr: &Expr<'_>, succ: LiveNode) -> LiveNode {
         let ty = self.typeck_results.expr_ty(expr);
         let m = self.ir.tcx.parent_module(expr.hir_id).to_def_id();
-        if self.ir.tcx.is_ty_uninhabited_from(m, ty, self.param_env) {
+        if self.ir.tcx.is_ty_uninhabited_from(m, ty, self.param_env)
+            && Some(succ) != self.conditional_succ
+        {
             match self.ir.lnks[succ] {
                 LiveNodeKind::ExprNode(succ_span, succ_id) => {
                     self.warn_about_unreachable(expr.span, ty, succ_span, succ_id, "expression");

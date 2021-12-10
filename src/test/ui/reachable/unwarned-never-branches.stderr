@@ -1,0 +1,22 @@
+error: unreachable expression
+  --> $DIR/unwarned-never-branches.rs:36:13
+   |
+LL |             foo();
+   |             ----- any code following this expression is unreachable
+LL |             println!("I'm dead.");
+   |             ^^^^^^^^^^^^^^^^^^^^^ unreachable expression
+   |
+note: the lint level is defined here
+  --> $DIR/unwarned-never-branches.rs:4:9
+   |
+LL | #![deny(unreachable_code)]
+   |         ^^^^^^^^^^^^^^^^
+note: this expression has type `Void`, which is uninhabited
+  --> $DIR/unwarned-never-branches.rs:35:13
+   |
+LL |             foo();
+   |             ^^^^^
+   = note: this error originates in the macro `$crate::format_args_nl` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: aborting due to previous error
+
